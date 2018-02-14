@@ -688,8 +688,7 @@ if __name__ == "__main__":
         run_loss = r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
         run_loss = r.compute_mean_loss(X_dev, D_dev)
         print("Unadjusted loss in Devset: %.03f" % np.exp(run_loss))
-
-        # print("Adjusted for missing vocab: %.03f" % np.exp(adjusted_loss))
+        print("Adjusted for missing vocab: %.03f" % np.exp(run_loss,fraction_lost, q))
 
     if mode == "train-np":
         '''
