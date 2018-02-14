@@ -685,10 +685,10 @@ if __name__ == "__main__":
         q = vocab.freq[vocab_size] / sum(vocab.freq[vocab_size:])
 
         r = RNN(vocab_size, hdim, vocab_size)
-        run_loss = r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
+        r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
         run_loss = r.compute_mean_loss(X_dev, D_dev)
         print("Unadjusted loss in Devset: %.03f" % np.exp(run_loss))
-        print("Adjusted for missing vocab: %.03f" % np.exp(run_loss,fraction_lost, q))
+        print("Adjusted for missing vocab: %.03f" % np.exp(run_loss, fraction_lost, q))
 
     if mode == "train-np":
         '''
