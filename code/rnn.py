@@ -169,13 +169,14 @@ class RNN(object):
             self.deltaW += np.outer(delta_out, s[t])
             for ta in range(steps + 1):
                 if ta == 0:
-                    # first time, use out_delta
+                    # first time, use out_delta (formula 17 init)
                     delta_r = self.W.T.dot(delta_out) * grad(s[t])
                 else:
-                    # accumulate previous result
+                    # accumulate previous result (formula 17 rec)
                     delta_r = self.U.T.dot(delta_r) * grad(s[t - ta])
-
+                # formula (15)
                 self.deltaV += np.outer(delta_r, make_onehot(x[t - ta], self.vocab_size))
+                # formula (16)
                 self.deltaU += np.outer(delta_r, s[t - ta - 1])
 
     def acc_deltas_bptt_np(self, x, d, y, s, steps):
