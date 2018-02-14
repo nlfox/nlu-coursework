@@ -691,7 +691,7 @@ if __name__ == "__main__":
         np.save("rnn.V", r.V)
         np.save("rnn.W", r.W)
         print("Unadjusted loss in Devset: %.03f" % np.exp(run_loss))
-        print("Adjusted for missing vocab: %.03f" % np.exp(run_loss, fraction_lost, q))
+        print("Adjusted for missing vocab: %.03f" % np.exp(adjust_loss(run_loss, fraction_lost, q)))
 
 
     if mode == "train-np":
@@ -737,9 +737,9 @@ if __name__ == "__main__":
         ##########################
         # --- your code here --- #
         ##########################
-
-        acc = 0.
-
+        r = RNN(vocab_size, hdim, vocab_size)
+        r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
+        acc = r.compute_acc_np(X_dev, D_dev)
         print("Accuracy: %.03f" % acc)
 
     if mode == "predict-lm":
