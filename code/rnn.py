@@ -119,7 +119,7 @@ class RNN(object):
             self.deltaW += np.outer(grad_out, s[t])
             grad_in = np.multiply(np.dot(np.transpose(self.W), grad_out), grad_softmax)
             self.deltaV += np.outer(grad_in, one_hot_x)
-            self.deltaU += np.outer(grad_in, s[t-1])
+            self.deltaU += np.outer(grad_in, s[t - 1])
 
     ##########################
     # --- your code here --- #
@@ -147,19 +147,6 @@ class RNN(object):
         # --- your code here --- #
         ##########################
 
-    def recursive_grad_in(self, grad_sigmoid, d, y, s, t, steps):
-        if steps == 0:
-            one_hot_d = make_onehot(d[t], self.vocab_size)
-            grad_softmax = np.multiply(s[t], np.ones((len(s[t]))) - s[t])
-            grad_out = np.multiply(one_hot_d - y[t], grad_sigmoid)
-            grad_in = np.multiply(np.dot(np.transpose(self.W), grad_out), grad_softmax)
-            return grad_in
-        else:
-            grad_softmax = np.multiply(s[t - steps], np.ones((len(s[t - steps]))) - s[t - steps])
-            grad_in = np.multiply(np.dot(np.transpose(self.U),self.recursive_grad_in(grad_sigmoid, d, y, s, t, steps-1)),
-                                  grad_softmax)
-            return grad_in
-
     def acc_deltas_bptt(self, x, d, y, s, steps):
         '''
         accumulate updates for V, W, U
@@ -178,18 +165,18 @@ class RNN(object):
         no return values
         '''
         for t in reversed(range(len(x))):
-            one_hot_d = make_onehot(d[t], self.vocab_size)
-            grad_sigmoid = np.ones((len(y[t])))
-            grad_out = np.multiply(one_hot_d - y[t], grad_sigmoid)
-            self.deltaW += np.outer(grad_out, s[t])
-            for n in range(0, steps):
-                grad_in = self.recursive_grad_in(grad_sigmoid, d, y, s, t, n)
-                self.deltaV += np.outer(grad_in, make_onehot(x[t-n], self.vocab_size))
-                self.deltaU += np.outer(grad_in, s[t - n -1])
-        # print("time {0}".format(t))
-        ##########################
-        # --- your code here --- #
-        ##########################
+            delta_out = make_onehot(d[t], self.vocab_size) - y[t]
+            self.deltaW += np.outer(delta_out, s[t])
+            for ta in range(steps + 1):
+                if ta == 0:
+                    # first time, use out_delta
+                    delta_r = self.W.T.dot(delta_out) * grad(s[t])
+                else:
+                    # accumulate previous result
+                    delta_r = self.U.T.dot(delta_r) * grad(s[t - ta])
+
+                self.deltaV += np.outer(delta_r, make_onehot(x[t - ta], self.vocab_size))
+                self.deltaU += np.outer(delta_r, s[t - ta - 1])
 
     def acc_deltas_bptt_np(self, x, d, y, s, steps):
         '''
@@ -319,7 +306,7 @@ class RNN(object):
         len_word = 0
         loss = 0.
         for n in range(len(X)):
-            loss += self.compute_loss(X[n],D[n])
+            loss += self.compute_loss(X[n], D[n])
             len_word += len(X[n])
         mean_loss = loss / len_word
 
