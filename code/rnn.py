@@ -142,7 +142,15 @@ class RNN(object):
 
         no return values
         '''
-        pass
+        one_hot_d = make_onehot(d[0], self.vocab_size)
+        one_hot_x = make_onehot(x[-1], self.vocab_size)
+        grad_sigmoid = np.ones((len(y[-1])))
+        grad_softmax = np.multiply(s[-1], np.ones((len(s[-1]))) - s[-1])
+        grad_out = np.multiply(one_hot_d - y[-1], grad_sigmoid)
+        self.deltaW += np.outer(grad_out, s[-1])
+        grad_in = np.multiply(np.dot(np.transpose(self.W), grad_out), grad_softmax)
+        self.deltaV += np.outer(grad_in, one_hot_x)
+        self.deltaU += np.outer(grad_in, s[-2])
         ##########################
         # --- your code here --- #
         ##########################
@@ -196,7 +204,18 @@ class RNN(object):
 
         no return values
         '''
-        pass
+        delta_out = make_onehot(d[-1], self.vocab_size) - y[-1]
+        self.deltaW += np.outer(delta_out, s[-1])
+        for ta in range(steps + 1):
+            if ta == 0:
+                # first time, use out_delta
+                delta_r = self.W.T.dot(delta_out) * grad(s[-1])
+            else:
+                # accumulate previous result
+                delta_r = self.U.T.dot(delta_r) * grad(s[-1 - ta])
+
+            self.deltaV += np.outer(delta_r, make_onehot(x[-1 - ta], self.vocab_size))
+            self.deltaU += np.outer(delta_r, s[-1 - ta - 1])
         ##########################
         # --- your code here --- #
         ##########################
@@ -239,6 +258,10 @@ class RNN(object):
         '''
 
         loss = 0.
+        one_hot_d = make_onehot(d[0], self.vocab_size)
+        y, _ = self.predict(x)
+        for n in range(self.vocab_size):
+            loss += - one_hot_d[n] * np.log(y[-1, n])
 
         ##########################
         # --- your code here --- #
@@ -256,7 +279,10 @@ class RNN(object):
 
         return 1 if argmax(y[t]) == d[0], 0 otherwise
         '''
-
+        y, _ = self.predict(x)
+        for t in range(len(y)):
+            if np.argmax(y[t]) == d[0]:
+                return 1
         ##########################
         # --- your code here --- #
         ##########################
@@ -274,6 +300,10 @@ class RNN(object):
         return 1 if p(d[0]) > p(d[1]), 0 otherwise
         '''
 
+        y, _ = self.predict(x)
+        for t in range(len(y)):
+            if np.argmax(y[t]) == d[0] and d[0] > d[1]:
+                return 1
         ##########################
         # --- your code here --- #
         ##########################
