@@ -111,7 +111,15 @@ class RNN(object):
         '''
 
         for t in reversed(range(len(x))):
-            pass
+            one_hot_d = make_onehot(d[t], self.vocab_size)
+            one_hot_x = make_onehot(x[t], self.vocab_size)
+            grad_sigmoid = np.ones((len(y[t])))
+            grad_softmax = np.multiply(s[t], np.ones((len(s[t]))) - s[t])
+            grad_out = np.multiply(one_hot_d - y[t], grad_sigmoid)
+            self.deltaW += np.outer(grad_out, s[t])
+            grad_in = np.multiply(np.dot(np.transpose(self.W), grad_out), grad_softmax)
+            self.deltaV += np.outer(grad_in, one_hot_x)
+            self.deltaU += np.outer(grad_in, s[t-1])
 
     ##########################
     # --- your code here --- #
@@ -139,6 +147,19 @@ class RNN(object):
         # --- your code here --- #
         ##########################
 
+    def recursive_grad_in(self, grad_sigmoid, d, y, s, t, steps):
+        if steps == 0:
+            one_hot_d = make_onehot(d[t], self.vocab_size)
+            grad_softmax = np.multiply(s[t], np.ones((len(s[t]))) - s[t])
+            grad_out = np.multiply(one_hot_d - y[t], grad_sigmoid)
+            grad_in = np.multiply(np.dot(np.transpose(self.W), grad_out), grad_softmax)
+            return grad_in
+        else:
+            grad_softmax = np.multiply(s[t - steps], np.ones((len(s[t - steps]))) - s[t - steps])
+            grad_in = np.multiply(np.dot(np.transpose(self.U),self.recursive_grad_in(grad_sigmoid, d, y, s, t, steps-1)),
+                                  grad_softmax)
+            return grad_in
+
     def acc_deltas_bptt(self, x, d, y, s, steps):
         '''
         accumulate updates for V, W, U
@@ -157,7 +178,14 @@ class RNN(object):
         no return values
         '''
         for t in reversed(range(len(x))):
-            pass
+            one_hot_d = make_onehot(d[t], self.vocab_size)
+            grad_sigmoid = np.ones((len(y[t])))
+            grad_out = np.multiply(one_hot_d - y[t], grad_sigmoid)
+            self.deltaW += np.outer(grad_out, s[t])
+            for n in range(0, steps):
+                grad_in = self.recursive_grad_in(grad_sigmoid, d, y, s, t, n)
+                self.deltaV += np.outer(grad_in, make_onehot(x[t-n], self.vocab_size))
+                self.deltaU += np.outer(grad_in, s[t - n -1])
         # print("time {0}".format(t))
         ##########################
         # --- your code here --- #
@@ -199,6 +227,11 @@ class RNN(object):
         '''
 
         loss = 0.
+        y, _ = self.predict(x)
+        for t in range(len(y)):
+            one_hot = make_onehot(d[t], self.vocab_size)
+            for n in range(self.vocab_size):
+                loss += - one_hot[n] * np.log(y[t, n])
 
         ##########################
         # --- your code here --- #
@@ -283,6 +316,12 @@ class RNN(object):
         '''
 
         mean_loss = 0.
+        len_word = 0
+        loss = 0.
+        for n in range(len(X)):
+            loss += self.compute_loss(X[n],D[n])
+            len_word += len(X[n])
+        mean_loss = loss / len_word
 
         ##########################
         # --- your code here --- #
