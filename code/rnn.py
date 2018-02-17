@@ -281,14 +281,10 @@ class RNN(object):
         return 1 if argmax(y[t]) == d[0], 0 otherwise
         '''
         y, _ = self.predict(x)
-        for t in range(len(y)):
-            if np.argmax(y[t]) == d[0]:
-                return 1
-        ##########################
-        # --- your code here --- #
-        ##########################
-
-        return 0
+        if np.argmax(y[-1]) == d[0]:
+            return 1
+        else:
+            return 0
 
     def compare_num_pred(self, x, d):
         '''
@@ -685,13 +681,13 @@ if __name__ == "__main__":
         q = vocab.freq[vocab_size] / sum(vocab.freq[vocab_size:])
 
         r = RNN(vocab_size, hdim, vocab_size)
-        r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
-        run_loss = r.compute_mean_loss(X_dev, D_dev)
+        #r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
+        #run_loss = r.compute_mean_loss(X_dev, D_dev)
         np.save("rnn.U", r.U)
         np.save("rnn.V", r.V)
         np.save("rnn.W", r.W)
-        print("Unadjusted loss in Devset: %.03f" % np.exp(run_loss))
-        print("Adjusted for missing vocab: %.03f" % np.exp(adjust_loss(run_loss, fraction_lost, q)))
+        #print("Unadjusted loss in Devset: %.03f" % np.exp(run_loss))
+        #print("Adjusted for missing vocab: %.03f" % np.exp(adjust_loss(run_loss, fraction_lost, q)))
 
 
     if mode == "train-np":
