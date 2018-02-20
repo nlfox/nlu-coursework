@@ -114,16 +114,12 @@ class RNN(object):
             one_hot_d = make_onehot(d[t], self.vocab_size)
             one_hot_x = make_onehot(x[t], self.vocab_size)
             grad_sigmoid = np.ones((len(y[t])))
-            grad_softmax = np.multiply(s[t], np.ones((len(s[t]))) - s[t])
             grad_out = np.multiply(one_hot_d - y[t], grad_sigmoid)
             self.deltaW += np.outer(grad_out, s[t])
-            grad_in = np.multiply(np.dot(np.transpose(self.W), grad_out), grad_softmax)
+            grad_in = self.W.T.dot(grad_out) * grad(s[t])
             self.deltaV += np.outer(grad_in, one_hot_x)
             self.deltaU += np.outer(grad_in, s[t - 1])
 
-    ##########################
-    # --- your code here --- #
-    ##########################
 
     def acc_deltas_np(self, x, d, y, s):
         '''
@@ -142,18 +138,20 @@ class RNN(object):
 
         no return values
         '''
+        t = len(x) - 1
         one_hot_d = make_onehot(d[0], self.vocab_size)
-        one_hot_x = make_onehot(x[-1], self.vocab_size)
-        grad_sigmoid = np.ones((len(y[-1])))
-        grad_softmax = np.multiply(s[-1], np.ones((len(s[-1]))) - s[-1])
-        grad_out = np.multiply(one_hot_d - y[-1], grad_sigmoid)
-        self.deltaW += np.outer(grad_out, s[-1])
-        grad_in = np.multiply(np.dot(np.transpose(self.W), grad_out), grad_softmax)
-        self.deltaV += np.outer(grad_in, one_hot_x)
-        self.deltaU += np.outer(grad_in, s[-2])
-        ##########################
-        # --- your code here --- #
-        ##########################
+        grad_sigmoid = np.ones((len(y[t])))
+        grad_out = np.multiply(one_hot_d - y[t], grad_sigmoid)
+        self.deltaW += np.outer(grad_out, s[t])
+
+        for t in reversed(range(len(x))):
+            grad_in = self.W.T.dot(grad_out) * grad(s[t])
+
+            one_hot_x = make_onehot(x[t], self.vocab_size)
+
+            self.deltaV += np.outer(grad_in, one_hot_x)
+
+            self.deltaU += np.outer(grad_in, s[t - 1])
 
     def acc_deltas_bptt(self, x, d, y, s, steps):
         '''
@@ -205,21 +203,18 @@ class RNN(object):
 
         no return values
         '''
-        delta_out = make_onehot(d[-1], self.vocab_size) - y[-1]
-        self.deltaW += np.outer(delta_out, s[-1])
+        delta_out = make_onehot(d[0], self.vocab_size) - y[-1]
+        self.deltaW += np.outer(delta_out, s[-2])
         for ta in range(steps + 1):
             if ta == 0:
                 # first time, use out_delta
-                delta_r = self.W.T.dot(delta_out) * grad(s[-1])
+                delta_r = self.W.T.dot(delta_out) * grad(s[-2])
             else:
                 # accumulate previous result
-                delta_r = self.U.T.dot(delta_r) * grad(s[-1 - ta])
+                delta_r = self.U.T.dot(delta_r) * grad(s[-2 - ta])
 
             self.deltaV += np.outer(delta_r, make_onehot(x[-1 - ta], self.vocab_size))
-            self.deltaU += np.outer(delta_r, s[-1 - ta - 1])
-        ##########################
-        # --- your code here --- #
-        ##########################
+            self.deltaU += np.outer(delta_r, s[-2 - ta - 1])
 
     def compute_loss(self, x, d):
         '''
@@ -263,11 +258,6 @@ class RNN(object):
         y, _ = self.predict(x)
         for n in range(self.vocab_size):
             loss += - one_hot_d[n] * np.log(y[-1, n])
-
-        ##########################
-        # --- your code here --- #
-        ##########################
-
         return loss
 
     def compute_acc_np(self, x, d):
@@ -681,14 +671,13 @@ if __name__ == "__main__":
         q = vocab.freq[vocab_size] / sum(vocab.freq[vocab_size:])
 
         r = RNN(vocab_size, hdim, vocab_size)
-        #r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
-        #run_loss = r.compute_mean_loss(X_dev, D_dev)
+        # r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
+        # run_loss = r.compute_mean_loss(X_dev, D_dev)
         np.save("rnn.U", r.U)
         np.save("rnn.V", r.V)
         np.save("rnn.W", r.W)
-        #print("Unadjusted loss in Devset: %.03f" % np.exp(run_loss))
-        #print("Adjusted for missing vocab: %.03f" % np.exp(adjust_loss(run_loss, fraction_lost, q)))
-
+        # print("Unadjusted loss in Devset: %.03f" % np.exp(run_loss))
+        # print("Adjusted for missing vocab: %.03f" % np.exp(adjust_loss(run_loss, fraction_lost, q)))
 
     if mode == "train-np":
         '''
