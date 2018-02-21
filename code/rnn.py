@@ -120,7 +120,6 @@ class RNN(object):
             self.deltaV += np.outer(grad_in, one_hot_x)
             self.deltaU += np.outer(grad_in, s[t - 1])
 
-
     def acc_deltas_np(self, x, d, y, s):
         '''
         accumulate updates for V, W, U
@@ -143,15 +142,12 @@ class RNN(object):
         grad_sigmoid = np.ones((len(y[t])))
         grad_out = np.multiply(one_hot_d - y[t], grad_sigmoid)
         self.deltaW += np.outer(grad_out, s[t])
-
+        grad_in = self.W.T.dot(grad_out) * grad(s[t])
         for t in reversed(range(len(x))):
-            grad_in = self.W.T.dot(grad_out) * grad(s[t])
-
             one_hot_x = make_onehot(x[t], self.vocab_size)
-
             self.deltaV += np.outer(grad_in, one_hot_x)
-
             self.deltaU += np.outer(grad_in, s[t - 1])
+            grad_in = self.U.T.dot(grad_in) * grad(s[t - 1])
 
     def acc_deltas_bptt(self, x, d, y, s, steps):
         '''
