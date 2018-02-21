@@ -237,10 +237,6 @@ class RNN(object):
             for n in range(self.vocab_size):
                 loss += - one_hot[n] * np.log(y[t, n])
 
-        ##########################
-        # --- your code here --- #
-        ##########################
-
         return loss
 
     def compute_loss_np(self, x, d):
@@ -721,7 +717,7 @@ if __name__ == "__main__":
         # --- your code here --- #
         ##########################
         r = RNN(vocab_size, hdim, vocab_size)
-        r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
+        r.train_np(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
         acc = r.compute_acc_np(X_dev, D_dev)
         print("Accuracy: %.03f" % acc)
 
