@@ -199,18 +199,24 @@ class RNN(object):
 
         no return values
         '''
-        delta_out = make_onehot(d[0], self.vocab_size) - y[-1]
-        self.deltaW += np.outer(delta_out, s[-2])
-        for ta in range(steps + 1):
-            if ta == 0:
-                # first time, use out_delta
-                delta_r = self.W.T.dot(delta_out) * grad(s[-2])
-            else:
-                # accumulate previous result
-                delta_r = self.U.T.dot(delta_r) * grad(s[-2 - ta])
+        t = len(x) - 1
+        delta_out = make_onehot(d[0], self.vocab_size) - y[t]
+        self.deltaW += np.outer(delta_out, s[t])
+        delta_in = self.W.T.dot(delta_out) * grad(s[t])
 
-            self.deltaV += np.outer(delta_r, make_onehot(x[-1 - ta], self.vocab_size))
-            self.deltaU += np.outer(delta_r, s[-2 - ta - 1])
+        for t in reversed(range(len(x))):
+            for ta in range(steps + 1):
+                if ta == 0:
+                    # first time, use out_delta
+                    delta_r = delta_in.copy()
+                else:
+                    # accumulate previous result
+                    delta_r = self.U.T.dot(delta_r) * grad(s[t - ta])
+
+                self.deltaV += np.outer(delta_r, make_onehot(x[t - ta], self.vocab_size))
+                self.deltaU += np.outer(delta_r, s[t - ta - 1])
+
+            delta_in = self.U.T.dot(delta_r) * grad(s[t - 1])
 
     def compute_loss(self, x, d):
         '''
@@ -284,14 +290,10 @@ class RNN(object):
         '''
 
         y, _ = self.predict(x)
-        for t in range(len(y)):
-            if np.argmax(y[t]) == d[0] and d[0] > d[1]:
-                return 1
-        ##########################
-        # --- your code here --- #
-        ##########################
-
-        return 0
+        if y[-1][d[0]] > y[-1][d[1]]:
+            return 1
+        else:
+            return 0
 
     def compute_acc_lmnp(self, X_dev, D_dev):
         '''
