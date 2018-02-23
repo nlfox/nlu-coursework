@@ -205,7 +205,7 @@ class RNN(object):
         delta_in = self.W.T.dot(delta_out) * grad(s[t])
 
         for t in reversed(range(len(x))):
-            for ta in range(steps + 1):
+            for ta in range(min(steps,len(x))+1):
                 if ta == 0:
                     # first time, use out_delta
                     delta_r = delta_in.copy()
