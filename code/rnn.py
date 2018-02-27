@@ -229,14 +229,11 @@ class RNN(object):
 
         return loss		the combined loss for all words
         '''
-
         loss = 0.
         y, _ = self.predict(x)
         for t in range(len(y)):
-            one_hot = make_onehot(d[t], self.vocab_size)
-            for n in range(self.vocab_size):
-                loss += - one_hot[n] * np.log(y[t, n])
-
+            loss += np.log(y[t][d[t]])
+        loss = -loss
         return loss
 
     def compute_loss_np(self, x, d):
@@ -665,11 +662,11 @@ if __name__ == "__main__":
         q = vocab.freq[vocab_size] / sum(vocab.freq[vocab_size:])
 
         r = RNN(vocab_size, hdim, vocab_size)
-        # r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
+        r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
         # run_loss = r.compute_mean_loss(X_dev, D_dev)
-        np.save("rnn.U", r.U)
-        np.save("rnn.V", r.V)
-        np.save("rnn.W", r.W)
+        #np.save("rnn.U", r.U)
+        #np.save("rnn.V", r.V)
+        #np.save("rnn.W", r.W)
         # print("Unadjusted loss in Devset: %.03f" % np.exp(run_loss))
         # print("Adjusted for missing vocab: %.03f" % np.exp(adjust_loss(run_loss, fraction_lost, q)))
 
