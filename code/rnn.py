@@ -90,7 +90,7 @@ class RNN(object):
         y = np.zeros((len(x), self.out_vocab_size))
 
         for t in range(len(x)):
-            inp = make_onehot(x[t], self.vocab_size)
+            inp = self.w2v_model.wv[self.num_to_word[x[t]]]
             # V dot input + U dot previous
             s[t] = sigmoid(self.V.dot(inp) + self.U.dot(s[t - 1]))
             # output
@@ -665,7 +665,7 @@ if __name__ == "__main__":
         q = vocab.freq[vocab_size] / sum(vocab.freq[vocab_size:])
 
         print("Building w2v model")
-        m = gensim.models.Word2Vec(sentences=[[num_to_word[word] for word in i] for i in S_train], size=vocab_size,window=10)
+        m = gensim.models.Word2Vec(sentences=[[num_to_word[word] for word in i] for i in S_train], size=vocab_size,window=5)
 
         r = RNN(vocab_size, hdim, vocab_size)
         print("Setted w2v model")
