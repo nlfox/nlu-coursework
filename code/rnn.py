@@ -2,7 +2,7 @@
 import sys
 import time
 import numpy as np
-
+import gensim
 from utils import *
 from rnnmath import *
 from sys import stdout
@@ -24,6 +24,10 @@ class RNN(object):
     Do NOT change any method signatures!
     '''
 
+    def set_w2v(self, model, d):
+        self.w2v_model = model
+        self.num_to_word = d
+
     def __init__(self, vocab_size, hidden_dims, out_vocab_size):
         '''
         initialize the RNN with random weight matrices.
@@ -37,7 +41,8 @@ class RNN(object):
         self.vocab_size = vocab_size
         self.hidden_dims = hidden_dims
         self.out_vocab_size = out_vocab_size
-
+        self.w2v_model = None
+        self.num_to_word = None
         # matrices V (input -> hidden), W (hidden -> output), U (hidden -> hidden)
         self.U = np.random.randn(self.hidden_dims, self.hidden_dims) * np.sqrt(0.1)
         self.V = np.random.randn(self.hidden_dims, self.vocab_size) * np.sqrt(0.1)
@@ -111,8 +116,11 @@ class RNN(object):
         '''
 
         for t in reversed(range(len(x))):
+
+            #one_hot_d = self.w2v_model.wv[self.num_to_word[d[t]]]
+            one_hot_x = self.w2v_model.wv[self.num_to_word[x[t]]]
             one_hot_d = make_onehot(d[t], self.vocab_size)
-            one_hot_x = make_onehot(x[t], self.vocab_size)
+            # one_hot_x = make_onehot(x[t], self.vocab_size)
             grad_sigmoid = np.ones((len(y[t])))
             grad_out = np.multiply(one_hot_d - y[t], grad_sigmoid)
             self.deltaW += np.outer(grad_out, s[t])
@@ -656,14 +664,21 @@ if __name__ == "__main__":
         # this is the best expected loss out of that set
         q = vocab.freq[vocab_size] / sum(vocab.freq[vocab_size:])
 
+        print("Building w2v model")
+        m = gensim.models.Word2Vec(sentences=[[num_to_word[word] for word in i] for i in S_train], size=vocab_size,window=10)
+
         r = RNN(vocab_size, hdim, vocab_size)
-        # r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
-        # run_loss = r.compute_mean_loss(X_dev, D_dev)
-        np.save("rnn.U", r.U)
-        np.save("rnn.V", r.V)
-        np.save("rnn.W", r.W)
-        # print("Unadjusted loss in Devset: %.03f" % np.exp(run_loss))
-        # print("Adjusted for missing vocab: %.03f" % np.exp(adjust_loss(run_loss, fraction_lost, q)))
+        print("Setted w2v model")
+        r.set_w2v(m, num_to_word)
+
+        r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
+        run_loss = r.compute_mean_loss(X_dev, D_dev)
+
+        # np.save("rnn.U", r.U)
+        # np.save("rnn.V", r.V)
+        # np.save("rnn.W", r.W)
+        print("Unadjusted loss in Devset: %.03f" % np.exp(run_loss))
+        print("Adjusted for missing vocab: %.03f" % np.exp(adjust_loss(run_loss, fraction_lost, q)))
 
     if mode == "train-np":
         '''
