@@ -143,11 +143,9 @@ class RNN(object):
         grad_out = np.multiply(one_hot_d - y[t], grad_sigmoid)
         self.deltaW += np.outer(grad_out, s[t])
         grad_in = self.W.T.dot(grad_out) * grad(s[t])
-        for t in reversed(range(len(x))):
-            one_hot_x = make_onehot(x[t], self.vocab_size)
-            self.deltaV += np.outer(grad_in, one_hot_x)
-            self.deltaU += np.outer(grad_in, s[t - 1])
-            grad_in = self.U.T.dot(grad_in) * grad(s[t - 1])
+        one_hot_x = make_onehot(x[t], self.vocab_size)
+        self.deltaV += np.outer(grad_in, one_hot_x)
+        self.deltaU += np.outer(grad_in, s[t - 1])
 
     def acc_deltas_bptt(self, x, d, y, s, steps):
         '''
@@ -202,21 +200,17 @@ class RNN(object):
         t = len(x) - 1
         delta_out = make_onehot(d[0], self.vocab_size) - y[t]
         self.deltaW += np.outer(delta_out, s[t])
-        delta_in = self.W.T.dot(delta_out) * grad(s[t])
-
-        for t in reversed(range(len(x))):
-            for ta in range(min(steps,len(x))+1):
-                if ta == 0:
-                    # first time, use out_delta
-                    delta_r = delta_in.copy()
-                else:
-                    # accumulate previous result
-                    delta_r = self.U.T.dot(delta_r) * grad(s[t - ta])
-
-                self.deltaV += np.outer(delta_r, make_onehot(x[t - ta], self.vocab_size))
-                self.deltaU += np.outer(delta_r, s[t - ta - 1])
-
-            delta_in = self.U.T.dot(delta_r) * grad(s[t - 1])
+        for ta in range(steps + 1):
+            if ta == 0:
+                # first time, use out_delta (formula 17 init)
+                delta_r = self.W.T.dot(delta_out) * grad(s[t])
+            else:
+                # accumulate previous result (formula 17 rec)
+                delta_r = self.U.T.dot(delta_r) * grad(s[t - ta])
+            # formula (15)
+            self.deltaV += np.outer(delta_r, make_onehot(x[t - ta], self.vocab_size))
+            # formula (16)
+            self.deltaU += np.outer(delta_r, s[t - ta - 1])
 
     def compute_loss(self, x, d):
         '''
