@@ -151,7 +151,7 @@ class RNN(object):
         grad_out = np.multiply(one_hot_d - y[t], grad_sigmoid)
         self.deltaW += np.outer(grad_out, s[t])
         grad_in = self.W.T.dot(grad_out) * grad(s[t])
-        one_hot_x = make_onehot(x[t], self.vocab_size)
+        one_hot_x = self.w2v_model.wv[self.num_to_word[x[t]]]
         self.deltaV += np.outer(grad_in, one_hot_x)
         self.deltaU += np.outer(grad_in, s[t - 1])
 
@@ -724,6 +724,15 @@ if __name__ == "__main__":
         # --- your code here --- #
         ##########################
         r = RNN(vocab_size, hdim, vocab_size)
+
+        print("Building w2v model")
+        m = gensim.models.Word2Vec(sentences=[[num_to_word[word] for word in i] for i in S_train+S_dev], size=vocab_size,window=5)
+
+        r = RNN(vocab_size, hdim, vocab_size)
+        print("Setted w2v model")
+        r.set_w2v(m, num_to_word)
+
+
         r.train_np(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
         acc = r.compute_acc_np(X_dev, D_dev)
         print("Accuracy: %.03f" % acc)
