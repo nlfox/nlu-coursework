@@ -200,7 +200,7 @@ class RNN(object):
         t = len(x) - 1
         delta_out = make_onehot(d[0], self.vocab_size) - y[t]
         self.deltaW += np.outer(delta_out, s[t])
-        for ta in range(steps + 1):
+        for ta in range(min(steps, len(x)) + 1):
             if ta == 0:
                 # first time, use out_delta (formula 17 init)
                 delta_r = self.W.T.dot(delta_out) * grad(s[t])
