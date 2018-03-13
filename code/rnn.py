@@ -116,8 +116,7 @@ class RNN(object):
         '''
 
         for t in reversed(range(len(x))):
-
-            #one_hot_d = self.w2v_model.wv[self.num_to_word[d[t]]]
+            # one_hot_d = self.w2v_model.wv[self.num_to_word[d[t]]]
             one_hot_x = self.w2v_model.wv[self.num_to_word[x[t]]]
             one_hot_d = make_onehot(d[t], self.vocab_size)
             # one_hot_x = make_onehot(x[t], self.vocab_size)
@@ -208,7 +207,7 @@ class RNN(object):
         t = len(x) - 1
         delta_out = make_onehot(d[0], self.vocab_size) - y[t]
         self.deltaW += np.outer(delta_out, s[t])
-        for ta in range(steps + 1):
+        for ta in range(min(steps, len(x)) + 1):
             if ta == 0:
                 # first time, use out_delta (formula 17 init)
                 delta_r = self.W.T.dot(delta_out) * grad(s[t])
@@ -665,7 +664,8 @@ if __name__ == "__main__":
         q = vocab.freq[vocab_size] / sum(vocab.freq[vocab_size:])
 
         print("Building w2v model")
-        m = gensim.models.Word2Vec(sentences=[[num_to_word[word] for word in i] for i in S_train], size=vocab_size,window=5)
+        m = gensim.models.Word2Vec(sentences=[[num_to_word[word] for word in i] for i in S_train], size=vocab_size,
+                                   window=5)
 
         r = RNN(vocab_size, hdim, vocab_size)
         print("Setted w2v model")
@@ -726,12 +726,12 @@ if __name__ == "__main__":
         r = RNN(vocab_size, hdim, vocab_size)
 
         print("Building w2v model")
-        m = gensim.models.Word2Vec(sentences=[[num_to_word[word] for word in i] for i in S_train+S_dev], size=vocab_size,window=5)
+        m = gensim.models.Word2Vec(sentences=[[num_to_word[word] for word in i] for i in [j for j in S_train] + [k for k in S_dev]],
+                                   size=vocab_size, window=5)
 
         r = RNN(vocab_size, hdim, vocab_size)
         print("Setted w2v model")
         r.set_w2v(m, num_to_word)
-
 
         r.train_np(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
         acc = r.compute_acc_np(X_dev, D_dev)
