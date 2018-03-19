@@ -688,6 +688,7 @@ if __name__ == "__main__":
         train_size = 1000
         dev_size = 1000
         vocab_size = 2000
+        w2v_dim = 2000
 
         hdim = int(sys.argv[3])
         lookback = int(sys.argv[4])
@@ -723,13 +724,13 @@ if __name__ == "__main__":
         ##########################
         # --- your code here --- #
         ##########################
-        r = RNN(vocab_size, hdim, vocab_size)
+        r = RNN(w2v_dim, hdim, w2v_dim)
 
         print("Building w2v model")
         m = gensim.models.Word2Vec(sentences=[[num_to_word[word] for word in i] for i in [j for j in S_train] + [k for k in S_dev]],
-                                   size=vocab_size, window=5)
+                                   size=w2v_dim, window=2)
 
-        r = RNN(vocab_size, hdim, vocab_size)
+        r = RNN(w2v_dim, hdim, w2v_dim)
         print("Setted w2v model")
         r.set_w2v(m, num_to_word)
 
