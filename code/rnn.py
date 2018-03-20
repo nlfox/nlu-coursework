@@ -618,7 +618,7 @@ if __name__ == "__main__":
         code for training language model.
         change this to different values, or use it to get you started with your own testing class
         '''
-        train_size = 1000
+        train_size = 25000
         dev_size = 1000
         vocab_size = 2000
 
@@ -658,9 +658,9 @@ if __name__ == "__main__":
         r = RNN(vocab_size, hdim, vocab_size)
         r.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback)
         # run_loss = r.compute_mean_loss(X_dev, D_dev)
-        #np.save("rnn.U", r.U)
-        #np.save("rnn.V", r.V)
-        #np.save("rnn.W", r.W)
+        np.save("rnn.U", r.U)
+        np.save("rnn.V", r.V)
+        np.save("rnn.W", r.W)
         # print("Unadjusted loss in Devset: %.03f" % np.exp(run_loss))
         # print("Adjusted for missing vocab: %.03f" % np.exp(adjust_loss(run_loss, fraction_lost, q)))
 
